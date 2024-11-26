@@ -1,8 +1,7 @@
 library(readxl)
 library(rstudioapi)
 
-# Set working directory to the location of your Excel file
-# Set the working directory to the folder where the file is located
+# Set working directory to the location of the Excel file
 setwd("C:/Users/ASUS/Desktop/assignment")
 
 # Verify if the file exists
@@ -10,69 +9,68 @@ file.exists("United_Airlines_Aircraft_Operating_Statistics-_Cost_Per_Block_Hour_
 # If the file exists, this should return TRUE
 
 # If the file extension is .xlsx, update the file name accordingly:
-data_file <- "United_Airlines_Aircraft_Operating_Statistics-_Cost_Per_Block_Hour_(Unadjusted).xlsx"
+input_file <- "United_Airlines_Aircraft_Operating_Statistics-_Cost_Per_Block_Hour_(Unadjusted).xlsx"
 
 # If the file extension is .xls, use:
-data_file <- "United_Airlines_Aircraft_Operating_Statistics-_Cost_Per_Block_Hour_(Unadjusted).xls"
+input_file <- "United_Airlines_Aircraft_Operating_Statistics-_Cost_Per_Block_Hour_(Unadjusted).xls"
 
 # Read the Excel file with the specified range
-all_data <- read_excel(data_file, range = "B2:W158")
-all_data
+data_frame <- read_excel(input_file, range = "B2:W158")
+data_frame
 
-# define categories
-daily_utilization_categories <- c("Block hours", "Airborne hours", "Departures")
-ownership_categories <- c("Rental", "Depreciation and Amortization")
-purchased_goods_categories <- c("Fuel/Oil", "Insurance", "Other (inc. Tax)")
-fleet_category <- c(
-  "small narrowbodies",
-  "large narrowbodies",
-  "widebodies",
-  "total fleet"
+# Define categories
+utilization_categories <- c("Block Hours", "Airborne Hours", "Departures")
+asset_ownership_categories <- c("Rental", "Depreciation and Amortization")
+supply_costs_categories <- c("Fuel/Oil", "Insurance", "Other (Inc. Tax)")
+fleet_types <- c(
+  "Small Narrowbodies",
+  "Large Narrowbodies",
+  "Widebodies",
+  "Total Fleet"
 )
 
-# row numbers
-purchased_goods_rows <- c(16, 55, 94, 133) - 5
-ownership_rows <- purchased_goods_rows + 12
-daily_utilization_rows <- ownership_rows + 13
+# Row numbers
+supply_costs_rows <- c(16, 55, 94, 133) - 5
+asset_ownership_rows <- supply_costs_rows + 12
+utilization_rows <- asset_ownership_rows + 13
 
-get_data_by_row <- function(row_num) {
-  if (row_num > nrow(all_data)) {
+extract_row_data <- function(row_number) {
+  if (row_number > nrow(data_frame)) {
     stop("Row number exceeds data range.")
   }
-  return(na.omit(as.numeric(all_data[row_num, -1])))
+  return(na.omit(as.numeric(data_frame[row_number, -1])))
 }
 
-get_category_data <- function(row_num, categories) {
+extract_category_data <- function(row_number, category_labels) {
   rows_data <- lapply(
-    seq_along(categories),
-    function(i) get_data_by_row(row_num + i)
+    seq_along(category_labels),
+    function(i) extract_row_data(row_number + i)
   )
   costs <- unlist(rows_data)
-  category <- factor(rep(categories, sapply(rows_data, length)))
+  category <- factor(rep(category_labels, sapply(rows_data, length)))
   return(data.frame(costs = costs, category = category))
 }
 
-box_plot <- function(data, title, ylab) {
+generate_box_plot <- function(data, title, y_label) {
   boxplot(costs ~ category,
           data = data,
           main = title,
-          col = "orange",
-          ylab = ylab,
-          border = "red"
+          col = "lightblue",
+          ylab = y_label,
+          border = "darkblue"
   )
 }
 
-plot_category <- function(rows, categories, title, ylab) {
+plot_by_category <- function(rows, category_labels, title, y_label) {
   windows(width = 1920 / 100, height = 1080 / 100) # Set window size
   par(mfrow = c(2, 2), oma = c(0, 0, 3, 0))
-  # Create the box plot using the formula interface
   lapply(
     seq_along(rows),
     function(i) {
-      box_plot(
-        get_category_data(
-          rows[i], categories
-        ), fleet_category[i], ylab
+      generate_box_plot(
+        extract_category_data(
+          rows[i], category_labels
+        ), fleet_types[i], y_label
       )
     }
   )
@@ -80,21 +78,22 @@ plot_category <- function(rows, categories, title, ylab) {
   par(mfrow = c(1, 1))
 }
 
-plot_category(
-  purchased_goods_rows,
-  purchased_goods_categories,
-  "Purchased Goods",
-  "Hours"
+# Generate box plots for each category
+plot_by_category(
+  supply_costs_rows,
+  supply_costs_categories,
+  "Supply Costs",
+  "Cost ($)"
 )
-plot_category(
-  ownership_rows,
-  ownership_categories,
+plot_by_category(
+  asset_ownership_rows,
+  asset_ownership_categories,
   "Aircraft Ownership",
   "Cost ($)"
 )
-plot_category(
-  daily_utilization_rows,
-  daily_utilization_categories,
+plot_by_category(
+  utilization_rows,
+  utilization_categories,
   "Daily Utilization",
-  "Cost ($)"
+  "Hours"
 )
