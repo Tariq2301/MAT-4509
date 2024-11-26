@@ -1,53 +1,47 @@
 library(readxl)
 library(rstudioapi)
 
-# Set working directory to the location of your Excel file
-# Set the working directory to the folder where the file is located
+# Set working directory to the location of Excel file
 setwd("C:/Users/ASUS/Desktop/assignment")
 
 # Verify if the file exists
 file.exists("United_Airlines_Aircraft_Operating_Statistics-_Cost_Per_Block_Hour_(Unadjusted).xls")
-# If the file exists, this should return TRUE
 
-# If the file extension is .xlsx, update the file name accordingly:
-data_file <- "United_Airlines_Aircraft_Operating_Statistics-_Cost_Per_Block_Hour_(Unadjusted).xlsx"
-
-# If the file extension is .xls, use:
-data_file <- "United_Airlines_Aircraft_Operating_Statistics-_Cost_Per_Block_Hour_(Unadjusted).xls"
+excel_file <- "United_Airlines_Aircraft_Operating_Statistics-_Cost_Per_Block_Hour_(Unadjusted).xlsx"
+excel_file <- "United_Airlines_Aircraft_Operating_Statistics-_Cost_Per_Block_Hour_(Unadjusted).xls"
 
 # Read the Excel file with the specified range
-all_data <- read_excel(data_file, range = "B2:W158")
-all_data
+dataset <- read_excel(excel_file, range = "B2:W158")
+dataset
 
-# Helper function to extract salary data by row
-get_salary_wages <- function(row_num, data = all_data) {
+# Helper function to extract row data
+extract_row_data <- function(row_num, data = dataset) {
   return(na.omit(as.numeric(data[row_num, -1])))
 }
-get_salary_wages
-# Ensure that salary_wages data has 17 points
-# Extract salary data from the dataset using get_salary_wages()
-salary_wages_snbodies <- get_salary_wages(6)    # For small narrowbodies
-salary_wages_lnbodies <- get_salary_wages(45)   # For large narrowbodies
-salary_wages_wbodies <- get_salary_wages(84)    # For widebodies
-salary_wages_tfleet <- get_salary_wages(123)    # For total fleet
+extract_row_data
 
-# Now, combine the extracted salary data into one sample
-# Assuming you want a combined sample of all these salary data sets
-salary_wages_sample <- c(salary_wages_snbodies, salary_wages_lnbodies, salary_wages_wbodies, salary_wages_tfleet)
-salary_wages_sample
-# Check the number of observations in the combined sample
-length(salary_wages_sample)
+# Extract data from specific rows
+data_small_narrow <- extract_row_data(6)     # For small narrowbodies
+data_large_narrow <- extract_row_data(45)    # For large narrowbodies
+data_widebody <- extract_row_data(84)        # For widebodies
+data_total_fleet <- extract_row_data(123)    # For total fleet
 
-# If you need exactly 17 observations, you can either take the first 17, sample 17 randomly, or apply some selection method.
-# Randomly select 17 observations from the combined data
+# Combine all extracted data into one set
+combined_data <- c(data_small_narrow, data_large_narrow, data_widebody, data_total_fleet)
+combined_data
+
+# Check the number of observations in the combined set
+length(combined_data)
+
+# Randomly select 17 observations
 set.seed(123)  # For reproducibility
-salary_wages_sample_17 <- sample(salary_wages_sample, 17, replace = FALSE)
-salary_wages_sample_17
-# View the sample of 17 observations
-print(salary_wages_sample_17)
+sampled_data <- sample(combined_data, 17, replace = FALSE)
+sampled_data
+# View the sampled data
+print(sampled_data)
 
-## Assuming these functions and salary data extraction methods have already been defined:
-get_modes <- function(data) {
+# Function to get modes
+calculate_modes <- function(data) {
   freq_table <- table(data)
   max_freq <- max(freq_table)
   modes <- as.numeric(names(freq_table[freq_table == max_freq]))
@@ -57,100 +51,74 @@ get_modes <- function(data) {
   return(modes)
 }
 
-get_frequency_distribution <- function(wage_data) {
-  # Number of observations
-  n <- length(wage_data)
+# Function to calculate frequency distribution
+calculate_frequency_distribution <- function(data_sample) {
+  n <- length(data_sample)
+  k <- ceiling(log2(n))  # Number of classes
+  min_val <- min(data_sample)
+  max_val <- max(data_sample)
+  class_width <- ceiling((max_val - min_val) / k)  # Ensure whole number width
   
-  # Calculate k directly as log2(n), and round it up
-  k <- ceiling(log2(n))
-  
-  # Calculate class interval (interval >= (max - min)/k)
-  min_salary <- min(wage_data)
-  max_salary <- max(wage_data)
-  class_interval <- (max_salary - min_salary) / k
-  class_interval <- ceiling(class_interval)  # Ensure class interval is a whole number
-  
-  # Create breakpoints
-  break_points <- seq(
-    min_salary - (class_interval / 2),  # Start the first break point slightly before the min value
-    max_salary + (class_interval / 2),  # End the last break point slightly after the max value
-    by = class_interval
+  breakpoints <- seq(
+    min_val - (class_width / 2),
+    max_val + (class_width / 2),
+    by = class_width
   )
   
-  # Create frequency distribution
-  salary_bins <- cut(wage_data, breaks = break_points, right = TRUE)
-  frequency_distribution <- table(salary_bins)
-  
-  return(frequency_distribution)
+  salary_bins <- cut(data_sample, breaks = breakpoints, right = TRUE)
+  frequency_table <- table(salary_bins)
+  return(frequency_table)
 }
 
-# Example: Extract salary data from each category
-salary_wages_snbodies <- get_salary_wages(6)    # For small narrowbodies
-salary_wages_lnbodies <- get_salary_wages(45)   # For large narrowbodies
-salary_wages_wbodies <- get_salary_wages(84)    # For widebodies
-salary_wages_tfleet <- get_salary_wages(123)    # For total fleet
+# Generate frequency distribution for the sample
+frequency_table <- calculate_frequency_distribution(sampled_data)
 
-# Combine the extracted salary data
-combined_salary_wages <- c(salary_wages_snbodies, salary_wages_lnbodies, salary_wages_wbodies, salary_wages_tfleet)
+# Print the frequency distribution
+cat("Frequency Distribution for Sample:\n")
+print(frequency_table)
 
-# If you want to take exactly 17 samples, you can sample from combined data
-set.seed(123)  # For reproducibility
-salary_wages_sample_17 <- sample(combined_salary_wages, 17, replace = FALSE)
-
-# Get frequency distribution for the sample data
-frequency_distribution_sample <- get_frequency_distribution(salary_wages_sample_17)
-
-# Print the frequency distribution for the sample
-cat("Frequency Distribution for Sample of 28 Observations:\n")
-print(frequency_distribution_sample)
-
-# Perform analysis on the sample
-print_analysis <- function(wage_data, title) {
-  mean <- mean(wage_data)
-  median <- median(wage_data)
-  modes <- get_modes(wage_data)
-  sample_sd <- sd(wage_data)  # sample
-  sample_var <- var(wage_data)  # sample
-  quartiles <- quantile(wage_data, probs = c(0.25, 0.5, 0.75))
-  tenth_percentile <- quantile(wage_data, probs = 0.10)
-  ninth_decile <- quantile(wage_data, probs = 0.90)
-  range <- max(wage_data) - min(wage_data)
+# Function to analyze sample data
+analyze_data <- function(data_sample, title) {
+  mean_val <- mean(data_sample)
+  median_val <- median(data_sample)
+  modes <- calculate_modes(data_sample)
+  sample_sd <- sd(data_sample)
+  sample_var <- var(data_sample)
+  quartiles <- quantile(data_sample, probs = c(0.25, 0.5, 0.75))
+  tenth_percentile <- quantile(data_sample, probs = 0.10)
+  ninth_decile <- quantile(data_sample, probs = 0.90)
+  range_val <- max(data_sample) - min(data_sample)
   
-  # Print results
-  cat("Analysis of ", title, "::\n")
-  cat("Mean:", mean, "\n")
-  cat("Median:", median, "\n")
+  cat("Analysis of", title, ":\n")
+  cat("Mean:", mean_val, "\n")
+  cat("Median:", median_val, "\n")
   if (is.null(modes) || length(modes) == 0) {
     cat("Modes: None\n")
   } else {
     cat("Modes:", paste(modes, collapse = ", "), "\n")
   }
-  
   cat("Sample Standard Deviation:", sample_sd, "\n")
   cat("Sample Variance:", sample_var, "\n")
   cat("Quartiles (Q1, Q2, Q3):", quartiles, "\n")
   cat("10th Percentile:", tenth_percentile, "\n")
   cat("9th Decile:", ninth_decile, "\n")
-  cat("Range:", range, "\n")
-  cat("\n\n")
+  cat("Range:", range_val, "\n\n")
 }
 
-# Perform analysis on the 17 sample
-print_analysis(salary_wages_sample_17, "Salary Wages Sample of 17 Observations")
+# Analyze the 17 sample data
+analyze_data(sampled_data, "Sample of 17 Observations")
 
-# Plot the histogram for the sample data
-plot_histogram <- function(frequency_distribution, window_title) {
-  barplot(frequency_distribution,
+# Plot histogram with color
+plot_histogram <- function(frequency_table, title) {
+  barplot(frequency_table,
           xlab = "Salary Ranges",
           ylab = "Frequency",
-          col = "lightblue",
-          border = "black",
-          space = 0,  # No space between bars
-          width = 1,  # Adjust width to fill the space better
-          main = window_title
+          col = "lightgreen",  
+          border = "darkgreen", 
+          space = 0,
+          main = title
   )
 }
 
-# Plot histogram for the sample frequency distribution
-plot_histogram(frequency_distribution_sample, "Histogram of Salary Wages Sample of 17 Observations")
-
+# Plot the histogram for the sample data
+plot_histogram(frequency_table, "Histogram of Sample Data")
